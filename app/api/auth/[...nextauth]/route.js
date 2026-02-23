@@ -4,6 +4,7 @@ import GitHubProvider from 'next-auth/providers/github';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export const authOptions = {
   providers: [
@@ -20,6 +21,7 @@ export const authOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        tenantId: { label: 'TenantId', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -46,11 +48,29 @@ export const authOptions = {
           throw new Error('You must accept the invitation first');
         }
 
+        // Check multi-tenancy access if tenantId is provided
+        if (credentials.tenantId) {
+          const tenantAccess = user.accessibleTenants?.find(
+            t => t.tenantId === credentials.tenantId && !t.revokedAt && new Date(t.expiresAt) > new Date()
+          );
+
+          if (!tenantAccess) {
+            throw new Error('You do not have access to this application or your access has expired');
+          }
+        }
+
+        // Update last login
+        await db.collection('users').updateOne(
+          { _id: user._id },
+          { $set: { lastLogin: new Date() } }
+        );
+
         return {
           id: user._id.toString(),
           email: user.email,
           name: user.name,
           image: user.image,
+          tenantId: credentials.tenantId || null,
         };
       },
     }),
@@ -93,6 +113,7 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
+        token.tenantId = user.tenantId;
       }
       return token;
     },
@@ -100,6 +121,7 @@ export const authOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.email = token.email;
+        session.tenantId = token.tenantId;
       }
       return session;
     },
