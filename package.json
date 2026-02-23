@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:admin": "node scripts/seed-admin.js",
+    "seed:tenants": "node scripts/seed-tenants.js"
   },
   "dependencies": {
     "next": "16.1.6",
@@ -16,7 +18,10 @@
     "mongodb": "^6.3.0",
     "nodemailer": "^7.0.7",
     "bcryptjs": "^2.4.3",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "jsonwebtoken": "^9.1.2",
+    "crypto": "^1.0.1",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
